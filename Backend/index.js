@@ -6,8 +6,13 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const db = require('./configs/db.configs.js');
 const path = require('path');
-
+const cors = require('cors');
 // Middleware (session)
+
+app.use(cors({
+    origin: 'http://127.0.0.1:5500' // or '*' for all origins
+}));
+
 app.use(
     session({
         secret: 'ini contoh secret',
@@ -22,11 +27,11 @@ app.use(
     })
 );
 
-//app.use(express.static('public'));
+app.use(express.static('public'));
 
 // Route for index.html
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 
@@ -124,6 +129,17 @@ router.get('/getstrukturjagorawi', (req, res) => {
         res.json({ message: 'Data Found', showItems: results.rows });
     });
 });
+
+router.get('/getchecklistjagorawi', (req, res) => {
+    db.query('SELECT * FROM checklist_k3_jagorawi', (err, results) => {
+        if (err) {
+            console.log(err);
+            return;
+        }
+        res.json({ message: 'Data Found', showItems: results.rows });
+    });
+});
+
 
 
 // Menampilkan seluruh kecelakaan dari Tabel Cipularang
@@ -268,6 +284,62 @@ router.post('/addkejadianjagorawi', (req, res) => {
 });
 
 
+// Menambahkan personel baru ke dalam Tabel Jagorawi
+router.post('/addchecklistjagorawi', (req, res) => {
+    const { 
+        section,
+        indikator_k3,
+        jumlah_item,
+        expired_date,
+        check_list_Pemeriksaan,
+        rambu_apar,
+        kelengkapan_box_hydrant,
+        ruang_laktasi,
+        ruang_p3k,
+        organik,
+        non_organik,
+        limbah_b3,
+        smoking_area,
+        dll
+    } = req.body;
+    
+    // Query untuk memasukkan data ke dalam tabel personel_k3_jagorawi
+    const query = `
+            INSERT INTO checklist_k3_jagorawi (
+            section, indikator_k3, jumlah_item, expired_date, 
+            check_list_Pemeriksaan, rambu_apar, kelengkapan_box_hydrant, 
+            ruang_laktasi, ruang_p3k, organik, non_organik, limbah_b3, 
+            smoking_area, dll
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+    `;
+
+    // Eksekusi query dengan parameter dari request body
+    db.query(query, [
+        section,
+        indikator_k3,
+        jumlah_item,
+        expired_date,
+        check_list_Pemeriksaan,
+        rambu_apar,
+        kelengkapan_box_hydrant,
+        ruang_laktasi,
+        ruang_p3k,
+        organik,
+        non_organik,
+        limbah_b3,
+        smoking_area,
+        dll
+    ])
+        .then(() => {
+            res.status(200).json({ message: 'Success' });
+        })
+        .catch((error) => {
+            console.error('Error inserting data:', error);
+            res.status(500).json({ message: 'Error inserting data' });
+        });
+});
+
+
 // Mengupdate data personel berdasarkan personel_k3_id
 // Route untuk memperbarui data personel K3
 router.put('/updatepersoneljagorawi', (req, res) => {
@@ -370,14 +442,21 @@ router.put('/updaterekapdatajagorawi', (req, res) => {
         man_hour_non_ops
     } = req.body;
 
+    // Calculate FR dynamically
+    const fr = (
+        (kecelakaan_berat_ops + kecelakaan_berat_non_ops + kecelakaan_ringan_ops +
+        kecelakaan_ringan_non_ops + kecelakaan_meninggal_ops + kecelakaan_meninggal_non_ops +
+        kecelakaan_near_miss_ops + kecelakaan_near_miss_non_ops + fire_accident + damaged_property) * 1000000
+    ) / (man_hour_ops + man_hour_non_ops);
+
     const query = `
         UPDATE rekap_data_k3_jagorawi SET
             jumlah_karyawan_ops = $1, jumlah_karyawan_non_ops = $2, jumlah_hari_kerja_ops = $3, jumlah_hari_kerja_non_ops = $4,
             jumlah_jam_kerja = $5, kecelakaan_berat_ops = $6, kecelakaan_berat_non_ops = $7, kecelakaan_ringan_ops = $8, kecelakaan_ringan_non_ops = $9,
             kecelakaan_meninggal_ops = $10, kecelakaan_meninggal_non_ops = $11, kecelakaan_near_miss_ops = $12, kecelakaan_near_miss_non_ops = $13,
             fire_accident = $14, damaged_property = $15, jumlah_hari_hilang_ops = $16, jumlah_hari_hilang_non_ops = $17, jumlah_hari_tanpa_hilang_ops = $18,
-            jumlah_hari_tanpa_hilang_non_ops = $19, lti_ops = $20, lti_non_ops = $21, man_hour_ops = $22, man_hour_non_ops = $23
-        WHERE tahun = $24 AND bulan = $25
+            jumlah_hari_tanpa_hilang_non_ops = $19, lti_ops = $20, lti_non_ops = $21, man_hour_ops = $22, man_hour_non_ops = $23, fr = $24
+        WHERE tahun = $25 AND bulan = $26
     `;
 
     db.query(query, [
@@ -385,7 +464,7 @@ router.put('/updaterekapdatajagorawi', (req, res) => {
         jumlah_jam_kerja, kecelakaan_berat_ops, kecelakaan_berat_non_ops, kecelakaan_ringan_ops, kecelakaan_ringan_non_ops,
         kecelakaan_meninggal_ops, kecelakaan_meninggal_non_ops, kecelakaan_near_miss_ops, kecelakaan_near_miss_non_ops,
         fire_accident, damaged_property, jumlah_hari_hilang_ops, jumlah_hari_hilang_non_ops, jumlah_hari_tanpa_hilang_ops,
-        jumlah_hari_tanpa_hilang_non_ops, lti_ops, lti_non_ops, man_hour_ops, man_hour_non_ops, tahun, bulan
+        jumlah_hari_tanpa_hilang_non_ops, lti_ops, lti_non_ops, man_hour_ops, man_hour_non_ops, fr, tahun, bulan
     ])
         .then(() => {
             res.status(200).json({ message: 'Update Success' });
@@ -437,7 +516,7 @@ router.put('/nullifydatajagorawi', (req, res) => {
             jumlah_jam_kerja = NULL, kecelakaan_berat_ops = NULL, kecelakaan_berat_non_ops = NULL, kecelakaan_ringan_ops = NULL, kecelakaan_ringan_non_ops = NULL,
             kecelakaan_meninggal_ops = NULL, kecelakaan_meninggal_non_ops = NULL, kecelakaan_near_miss_ops = NULL, kecelakaan_near_miss_non_ops = NULL,
             fire_accident = NULL, damaged_property = NULL, jumlah_hari_hilang_ops = NULL, jumlah_hari_hilang_non_ops = NULL, jumlah_hari_tanpa_hilang_ops = NULL,
-            jumlah_hari_tanpa_hilang_non_ops = NULL, lti_ops = NULL, lti_non_ops = NULL, man_hour_ops = NULL, man_hour_non_ops = NULL
+            jumlah_hari_tanpa_hilang_non_ops = NULL, lti_ops = NULL, lti_non_ops = NULL, man_hour_ops = NULL, man_hour_non_ops = NULL, fr = NULL
         WHERE tahun = $1 AND bulan = $2
     `;
 

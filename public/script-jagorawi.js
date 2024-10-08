@@ -30,6 +30,35 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
+    // Add available sections dynamically
+    const availableSections = ['A', 'B'];
+    const sectionSelect = document.getElementById('sectionSelect');
+    availableSections.forEach(section => {
+        const option = document.createElement('option');
+        option.value = section;
+        option.textContent = section;
+        sectionSelect.appendChild(option);
+    });
+
+    // Function to filter the table by section
+    window.filterTableBySection = function() {
+    const selectedSection = document.getElementById('sectionSelect').value;
+    const table = document.getElementById('checklist-k3-table');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    for (let i = 0; i < rows.length; i++) {
+        const sectionCell = rows[i].getElementsByTagName('td')[1]; // Assuming section is in the 2nd column (index 0)
+        const section = sectionCell.textContent || sectionCell.innerText;
+        
+        if (selectedSection === "" || section === selectedSection) {
+            rows[i].style.display = ""; // Show row
+        } else {
+            rows[i].style.display = "none"; // Hide row
+        }
+    }
+};
+
+
 
 // Fungsi untuk format tanggal ke format YYYY-MM-DD
 function formatTanggal(tanggal) {
@@ -187,4 +216,68 @@ fetch('http://localhost:3000/getkecelakaanjagorawi')
             }
         })
         .catch(error => console.error('Error fetching Personel K3 data:', error));
+
+                    // Fetch data for Personel K3
+    fetch('http://localhost:3000/getstrukturjagorawi')
+    .then(response => response.json())
+    .then(data => {
+        if (data.message === 'Data Found') {
+            const strukturTableBody = document.querySelector('#struktur-organisasi-table tbody');
+            strukturTableBody.innerHTML = ''; // Clear existing rows
+
+            data.showItems.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.struktur_id || ''}</td>
+                    <td>${item.nama || ''}</td>
+                    <td>${item.jabatan || ''}</td>
+                `;
+                strukturTableBody.appendChild(row);
+            });
+
+            // Inisialisasi DataTables untuk tabel Personel K3
+            $('#struktur-organisasi-table').DataTable();
+        } else {
+            console.error('Struktur Organisasi Data not found');
+        }
+    })
+    .catch(error => console.error('Error fetching Struktur Organisasi:', error));
+
+
+    fetch('/getchecklistjagorawi')
+    .then(response => response.json())
+    .then(data => {
+        if (data.message === 'Data Found') {
+            const checklistTableBody = document.querySelector('#checklist-k3-table tbody');
+            checklistTableBody.innerHTML = ''; // Clear existing rows
+
+            data.showItems.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.checklist_id}</td>
+                    <td>${item.section}</td>
+                    <td>${item.indikator_k3}</td>
+                    <td>${item.jumlah_item}</td>
+                    <td>${item.expired_date}</td>
+                    <td>${item.check_list_pemeriksaan}</td>
+                    <td>${item.rambu_apar}</td>
+                    <td>${item.kelengkapan_box_hydrant}</td>
+                    <td>${item.ruang_laktasi}</td>
+                    <td>${item.ruang_p3k}</td>
+                    <td>${item.organik}</td>
+                    <td>${item.non_organik}</td>
+                    <td>${item.limbah_b3}</td>
+                    <td>${item.smoking_area}</td>
+                    <td>${item.dll}</td>
+                `;
+                checklistTableBody.appendChild(row);
+            });
+
+            // Inisialisasi DataTables untuk tabel Personel K3
+            $('#checklist-k3-table').DataTable();
+        } else {
+            console.error('Data Checklist K3 not found');
+        }
+    })
+    .catch(error => console.error('Error fetching Data Checklist K3:', error));
 });

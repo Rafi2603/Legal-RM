@@ -2,11 +2,9 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "homepage": "https://Rafi2603.github.io/Legal-RM",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "node backend/index.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",

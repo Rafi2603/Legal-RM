@@ -9,9 +9,14 @@ const path = require('path');
 const cors = require('cors');
 // Middleware (session)
 
-app.use(cors({
-    origin: 'https://rafi2603.github.io' // or '*' for all origins
-}));
+const corsOptions = {
+    origin: 'https://rafi2603.github.io', // allow only GitHub Pages origin
+    methods: 'GET,POST', // specify allowed methods
+    credentials: true, // if you are using cookies or sessions
+  };
+
+
+app.use(cors(corsOptions));
 
 app.use(
     session({

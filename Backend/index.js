@@ -10,7 +10,7 @@ const cors = require('cors');
 // Middleware (session)
 
 app.use(cors({
-    origin: 'http://127.0.0.1:5500' // or '*' for all origins
+    origin: 'https://rafi2603.github.io' // or '*' for all origins
 }));
 
 app.use(
